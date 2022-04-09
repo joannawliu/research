@@ -1,7 +1,6 @@
 # remaining todo/issues:
 ### decennial: median home value might instead be H076001
 ### for decennial + acs county subdivisions: drop observations with county_subdiv_code = 00000
-### for decennial + acs: calculate pct_hh_poverty
 
 
 
@@ -23,10 +22,8 @@ vars_dec <- c(population = "P001001", white_residents = "P006002",
               native_residents = "P006004", pac_isl_residents = "P006006", 
               other_race_residents = "P006007", multi_race_residents = "P006008", 
               nonhisp_white = "P007003", hisp_white = "P007011",
-              median_hh_income = "P053001", median_home_value = "H085001")
-
-# store county subdivision states
-subdiv_states <- c("CT", "HI", "KY", "MA", "NJ", "NY", "OH", "PA", "RI")
+              median_hh_income = "P053001", poverty_pop = "P087002",
+              median_home_value = "H085001")
 
 # decennial dataframe for 2000
 dec2000_place <- get_decennial(geography = "place", year = 2000, variables = vars_dec) %>%
@@ -34,12 +31,13 @@ dec2000_place <- get_decennial(geography = "place", year = 2000, variables = var
   mutate(year = 2000,    # add year col
          sum_other_race_residents = native_residents + pac_isl_residents +
            other_race_residents + multi_race_residents,    # sum other race
+         p_poverty = poverty_pop / population,    # proportion below poverty level
          place_code = str_sub(GEOID, -5)) %>%    # separate place code
     relocate(GEOID, place_code, NAME, year, population,
              white_residents, black_residents, asian_residents, sum_other_race_residents,
              native_residents, pac_isl_residents, other_race_residents, multi_race_residents,
              nonhisp_white, hisp_white,
-             median_hh_income, median_home_value)    # re-order cols
+             median_hh_income, p_poverty, median_home_value)    # re-order cols
 
 # export final decennial place df
 # write.csv(dec2000_place, "dec_place_final.csv")
@@ -48,6 +46,9 @@ dec2000_place <- get_decennial(geography = "place", year = 2000, variables = var
 
 ########## decennial data: county subdivision ##########
 
+# store county subdivision states
+subdiv_states <- c("CT", "HI", "KY", "MA", "NJ", "NY", "OH", "PA", "RI")
+
 # decennial dataframe for 2000
 dec2000_subdiv <- get_decennial(geography = "county subdivision", year = 2000, 
                                 variables = vars_dec, state = subdiv_states) %>%
@@ -55,6 +56,7 @@ dec2000_subdiv <- get_decennial(geography = "county subdivision", year = 2000,
   mutate(year = 2000,    # add year col
          sum_other_race_residents = native_residents + pac_isl_residents +
            other_race_residents + multi_race_residents,    # sum other race
+         p_poverty = poverty_pop / population,    # proportion below poverty level
          state_code = substr(GEOID, 1, 2),    # separate state code
          county_code = substr(GEOID, 3, 5),    # separate county code
          county_subdiv_code = str_sub(GEOID, -5)) %>%    # separate county subdivision code
@@ -63,7 +65,7 @@ dec2000_subdiv <- get_decennial(geography = "county subdivision", year = 2000,
              white_residents, black_residents, asian_residents, sum_other_race_residents,
              native_residents, pac_isl_residents, other_race_residents, multi_race_residents,
              nonhisp_white, hisp_white,
-             median_hh_income, median_home_value)    # re-order cols
+             median_hh_income, p_poverty, median_home_value)    # re-order cols
 
 # export final decennial county subdivision df
 # write.csv(dec2000_subdiv, "dec_subdiv_final.csv")
@@ -79,7 +81,8 @@ vars_acs <- c(population = "B01003_001",
               pac_isl_residents = "B02001_006", other_race_residents = "B02001_007", 
               multi_race_residents = "B02001_008", 
               nonhisp_white = "B03002_003", hisp_white = "B03002_013", 
-              median_hh_income = "B19013_001", median_home_value = "B25077_001")
+              median_hh_income = "B19013_001", poverty_pop = "B17021_002", 
+              median_home_value = "B25077_001")
 
 # function: create ACS dataframes
 get_acs_place <- function(y) {
@@ -89,12 +92,13 @@ get_acs_place <- function(y) {
     mutate(year = y,    # create year variable
            sum_other_race_residents = native_residents + pac_isl_residents +
              other_race_residents + multi_race_residents,    # sum other race
+           p_poverty = poverty_pop / population,    # proportion below poverty level
            place_code = str_sub(GEOID, -5)) %>%    # separate place code
     relocate(GEOID, place_code, NAME, year, population,
              white_residents, black_residents, asian_residents, sum_other_race_residents,
              native_residents, pac_isl_residents, other_race_residents, multi_race_residents,
              nonhisp_white, hisp_white,
-             median_hh_income, median_home_value)    # re-order cols
+             median_hh_income, p_poverty, median_home_value)    # re-order cols
   return(df)
 }
 
@@ -133,6 +137,7 @@ get_acs_subdiv <- function(y) {
     mutate(year = y,    # create year variable
            sum_other_race_residents = native_residents + pac_isl_residents +
              other_race_residents + multi_race_residents,    # sum other race
+           p_poverty = poverty_pop / population,    # proportion below poverty level
            state_code = substr(GEOID, 1, 2),    # separate state code
            county_code = substr(GEOID, 3, 5),    # separate county code
            county_subdiv_code = str_sub(GEOID, -5)) %>%    # separate county subdivision code
@@ -141,7 +146,7 @@ get_acs_subdiv <- function(y) {
              white_residents, black_residents, asian_residents, sum_other_race_residents,
              native_residents, pac_isl_residents, other_race_residents, multi_race_residents,
              nonhisp_white, hisp_white,
-             median_hh_income, median_home_value)    # re-order cols
+             median_hh_income, p_poverty, median_home_value)    # re-order cols
   return(df)
 }
 
